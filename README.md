@@ -1,7 +1,8 @@
 # FalaBrasil scripts for ESPnet
 
 This repo contains scripts adapted from ESPnet original recipes, mainly for
-speech synthesis (TTS).
+phoneme-based speech synthesis (TTS). Some other info may be found at
+[UFPalign's repo](https://github.com/falabrasil/ufpalign).
 
 
 ## Usage
@@ -30,25 +31,41 @@ My setup:
 ## Dependencies
 
 The following assumes miniconda and nvidia drivers are already installed.
-By April 2023: PyTorch=v2.0.0, CUDA=v11.7, ESPnet=v202301.
+By April 2023: PyTorch=v2.0.0, CUDA=v11.7, ESPnet=v202301, MFA=2.2.9.
 
 ```bash
 $ conda create --name ufpa-espnet-mfa-py39 python=3.9 --yes
 $ conda activate ufpa-espnet-mfa-py39
 (ufpa-espnet-mfa-py39) $ pip install pip -U && \
-    pip install torch torchvision torchaudio && \ 
-    pip install 'espnet[all]' phonemizer
-(ufpa-espnet-mfa-py39) $ conda install -c conda-forge montreal-forced-aligner --yes
+    pip install torch torchvision torchaudio && \
+    pip install 'espnet[all]' phonemizer && \
+    conda install -c conda-forge montreal-forced-aligner --yes
 ```
 
 
 ## Recipes
 
-- LJSpeech: runs the default recipe with MFA alignments in a data-constrained
-  environment (1000 utts out of 13k) mainly for debug purposes. Also, prevents
-  MFA from training acoustic and g2p models by downloading the pre-trained ones
-  from MFA servers (saves a lot of time).
-- Constituicao:TBD
+### LJSpeech
+
+Runs the default recipe with MFA alignments in a data-constrained environment
+(2h from 1000 utts out of 13k) mainly for debug purposes. Also, prevents MFA
+from training acoustic and g2p models by downloading the pre-trained ones from
+MFA servers (saves a lot of time).
+
+### Constituicao: TBD
+
+
+## Data
+
+Both datasets are sampled at 22050 Hz. LJSpeech is roughly 3x bigger than
+Constituicao, however the number of files is 10x greater, which means
+Constituicao's utts are longer.
+
+- LJSpeech: 24h. Total Duration of 13100 files: 23:55:17.08
+- Constituicao: 9h. Total Duration of 1255 files: 08:58:21.94
+
+
+:warning: TODO plot histogram and boxplot on wav durations.
 
 
 [![FalaBrasil](https://gitlab.com/falabrasil/avatars/-/raw/main/logo_fb_git_footer.png)](https://ufpafalabrasil.gitlab.io/ "Visite o site do Grupo FalaBrasil") [![UFPA](https://gitlab.com/falabrasil/avatars/-/raw/main/logo_ufpa_git_footer.png)](https://portal.ufpa.br/ "Visite o site da UFPA")

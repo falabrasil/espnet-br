@@ -20,7 +20,6 @@ fi
 train_set=tr_no_dev_phn
 valid_set=dev_phn
 test_sets=eval1_phn
-#test_sets="dev_phn eval1_phn"
 
 train_config=conf/tuning/train_fastspeech2.yaml
 inference_config=conf/tuning/decode_fastspeech.yaml
@@ -28,14 +27,17 @@ inference_config=conf/tuning/decode_fastspeech.yaml
 # g2p=g2p_en # Include word separator
 g2p=none # g2p_en_no_space # Include no word separator
 
+# expose data dir. if it exists, script will know, else it'll be downloaded
+export LJSPEECH=/mnt/audio-datasets
+
 local/run_mfa.sh \
-  --nj 6 \
+  --nj 8 \
   --stage 0 \
   --stop_stage 6 
 
 ./tts.sh \
-    --nj 6 \
-    --inference_nj 6 \
+    --nj 8 \
+    --inference_nj 4 \
     --gpu_inference false \
     --stage 2 \
     --lang en \

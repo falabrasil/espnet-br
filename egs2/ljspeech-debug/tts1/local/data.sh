@@ -14,7 +14,6 @@ stage=-1
 stop_stage=2
 
 log "$0 $*"
-#. utils/parse_options.sh
 
 if [ $# -ne 0 ]; then
     log "Error: No positional arguments are required."
@@ -22,15 +21,13 @@ if [ $# -ne 0 ]; then
 fi
 
 . ./path.sh || exit 1;
-#. ./cmd.sh || exit 1;
-#. ./db.sh || exit 1;
 
-#if [ -z "${LJSPEECH}" ]; then
-#   log "Fill the value of 'JSUT' of db.sh"
-#   exit 1
-#fi
-#db_root=${LJSPEECH}
-db_root=./corpus
+if [ -z "${LJSPEECH}" ]; then
+   log "Fill the value of 'LJSPEECH'"
+   exit 1
+fi
+db_root=${LJSPEECH}
+#db_root=./corpus
 
 train_set=tr_no_dev
 train_dev=dev
