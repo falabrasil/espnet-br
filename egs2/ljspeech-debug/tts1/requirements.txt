@@ -1,0 +1,5 @@
+phonemizer
+torch
+torchvision
+torchaudio
+'dvc[gdrive]'
