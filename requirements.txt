@@ -1,0 +1,6 @@
+'dvc[gdrive]'
+'espnet[all]'
+phonemizer
+torch
+torchaudio
+torchvision
