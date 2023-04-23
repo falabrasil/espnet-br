@@ -1,8 +1,12 @@
 # FalaBrasil scripts for ESPnet
 
-This repo contains scripts adapted from ESPnet original recipes, mainly for
-phoneme-based speech synthesis (TTS). Some other info may be found at
-[UFPalign's repo](https://github.com/falabrasil/ufpalign).
+This repo adapts ESPnet's original recipes mainly for phoneme-based speech
+synthesis (TTS). MFA-reliance has been made default instead of training an
+end-to-end aligner head or relying on tacotron's as teacher.
+
+The whole purpose of these TTS experiments is to serve as quality assessment
+of phonetic aligners in Brazilian Portuguese, therefore some other info may be
+found at [UFPAlign's repo](https://github.com/falabrasil/ufpalign).
 
 
 ## Usage
@@ -15,8 +19,8 @@ $ cd espnet/egs2/ljspeech-debug
 $ ./run.sh  # watch: install dependencies on a venv beforehand
 ```
 
-:warning: Decoding consumes a lot of RAM, make sure you gotta at least
-32 GB + swap. Training without GPU is unadvised.
+:warning: Decoding consumes a lot of RAM, so number of jobs was reduced to 4.
+Make sure you gotta at least 16 GB + swap. Training without GPU is unadvised.
 
 My setup:
 
@@ -31,7 +35,8 @@ My setup:
 ## Dependencies
 
 The following assumes miniconda and nvidia drivers are already installed.
-By April 2023: PyTorch=v2.0.0, CUDA=v11.7, ESPnet=v202301, MFA=2.2.9.
+
+As of April 2023: PyTorch=v2.0.0, CUDA=v11.7, ESPnet=v202301, MFA=2.2.9.
 
 ```bash
 $ conda create --name ufpa-espnet-mfa-py39 python=3.9 --yes
@@ -52,20 +57,25 @@ Runs the default recipe with MFA alignments in a data-constrained environment
 from training acoustic and g2p models by downloading the pre-trained ones from
 MFA servers (saves a lot of time).
 
-### Constituicao: TBD
+:warning: ESPnet's original recipe has lots of flaws w.r.t. MFA usage, see #1.
+
+### Constituicao
+
+Same as above, but uses MFA's Portuguese models. Also filters only to utts in
+between 5s and 30s (see #2). I had a really hard time with the global stats
+collection since the duration of the frames was not matching the feat length.
+`silfix.py` was written exclusively to fix the problem for some hand-selected
+utts.
 
 
 ## Data
 
 Both datasets are sampled at 22050 Hz. LJSpeech is roughly 3x bigger than
 Constituicao, however the number of files is 10x greater, which means
-Constituicao's utts are longer.
+Constituicao's utts are longer (see #2).
 
 - LJSpeech: 24h. Total Duration of 13100 files: 23:55:17.08
 - Constituicao: 9h. Total Duration of 1255 files: 08:58:21.94
-
-
-:warning: TODO plot histogram and boxplot on wav durations.
 
 
 [![FalaBrasil](https://gitlab.com/falabrasil/avatars/-/raw/main/logo_fb_git_footer.png)](https://ufpafalabrasil.gitlab.io/ "Visite o site do Grupo FalaBrasil") [![UFPA](https://gitlab.com/falabrasil/avatars/-/raw/main/logo_ufpa_git_footer.png)](https://portal.ufpa.br/ "Visite o site da UFPA")

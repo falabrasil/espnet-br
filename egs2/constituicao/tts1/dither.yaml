@@ -1,0 +1,3 @@
+# https://github.com/MontrealCorpusTools/Montreal-Forced-Aligner/issues/525
+features:
+  dither: 0

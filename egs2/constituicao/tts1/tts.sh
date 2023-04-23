@@ -11,7 +11,7 @@ set -o pipefail
 
 log() {
     local fname=${BASH_SOURCE[1]##*/}
-    echo -e "$(date '+%Y-%m-%dT%H:%M:%S') (${fname}:${BASH_LINENO[0]}:${FUNCNAME[1]}) $*"
+    echo -e "$(date '+%Y-%m-%dT%H:%M:%S') (${fname}:${BASH_LINENO[0]}:${FUNCNAME[1]}) $*" | lolcat
 }
 min() {
   local a b
@@ -340,130 +340,130 @@ if ! "${skip_data_prep}"; then
             echo "${feats_type}" > "${data_feats}${_suf}/${dset}/feats_type"
         done
 
-        # Extract X-vector
-        if "${use_xvector}"; then
-            if [ "${xvector_tool}" = "kaldi" ]; then
-                log "Stage 2+: Extract X-vector: data/ -> ${dumpdir}/xvector (Require Kaldi)"
-                # Download X-vector pretrained model
-                xvector_exp=${expdir}/xvector_nnet_1a
-                if [ ! -e "${xvector_exp}" ]; then
-                    log "X-vector model does not exist. Download pre-trained model."
-                    wget http://kaldi-asr.org/models/8/0008_sitw_v2_1a.tar.gz
-                    tar xvf 0008_sitw_v2_1a.tar.gz
-                    [ ! -e "${expdir}" ] && mkdir -p "${expdir}"
-                    mv 0008_sitw_v2_1a/exp/xvector_nnet_1a "${xvector_exp}"
-                    rm -rf 0008_sitw_v2_1a.tar.gz 0008_sitw_v2_1a
-                fi
+        ## Extract X-vector
+        #if "${use_xvector}"; then
+        #    if [ "${xvector_tool}" = "kaldi" ]; then
+        #        log "Stage 2+: Extract X-vector: data/ -> ${dumpdir}/xvector (Require Kaldi)"
+        #        # Download X-vector pretrained model
+        #        xvector_exp=${expdir}/xvector_nnet_1a
+        #        if [ ! -e "${xvector_exp}" ]; then
+        #            log "X-vector model does not exist. Download pre-trained model."
+        #            wget http://kaldi-asr.org/models/8/0008_sitw_v2_1a.tar.gz
+        #            tar xvf 0008_sitw_v2_1a.tar.gz
+        #            [ ! -e "${expdir}" ] && mkdir -p "${expdir}"
+        #            mv 0008_sitw_v2_1a/exp/xvector_nnet_1a "${xvector_exp}"
+        #            rm -rf 0008_sitw_v2_1a.tar.gz 0008_sitw_v2_1a
+        #        fi
 
-                # Generate the MFCC features, VAD decision, and X-vector
-                for dset in "${train_set}" "${valid_set}" ${test_sets}; do
-                    if [ "${dset}" = "${train_set}" ] || [ "${dset}" = "${valid_set}" ]; then
-                        _suf="/org"
-                    else
-                        _suf=""
-                    fi
-                    # 1. Copy datadir and resample to 16k
-                    utils/copy_data_dir.sh "${data_feats}${_suf}/${dset}" "${dumpdir}/mfcc/${dset}"
-                    utils/data/resample_data_dir.sh 16000 "${dumpdir}/mfcc/${dset}"
+        #        # Generate the MFCC features, VAD decision, and X-vector
+        #        for dset in "${train_set}" "${valid_set}" ${test_sets}; do
+        #            if [ "${dset}" = "${train_set}" ] || [ "${dset}" = "${valid_set}" ]; then
+        #                _suf="/org"
+        #            else
+        #                _suf=""
+        #            fi
+        #            # 1. Copy datadir and resample to 16k
+        #            utils/copy_data_dir.sh "${data_feats}${_suf}/${dset}" "${dumpdir}/mfcc/${dset}"
+        #            utils/data/resample_data_dir.sh 16000 "${dumpdir}/mfcc/${dset}"
 
-                    # 2. Extract mfcc features
-                    _nj=$(min "${nj}" "$(<${dumpdir}/mfcc/${dset}/utt2spk wc -l)")
-                    steps/make_mfcc.sh --nj "${_nj}" --cmd "${train_cmd}" \
-                        --write-utt2num-frames true \
-                        --mfcc-config conf/mfcc.conf \
-                        "${dumpdir}/mfcc/${dset}"
-                    utils/fix_data_dir.sh "${dumpdir}/mfcc/${dset}"
+        #            # 2. Extract mfcc features
+        #            _nj=$(min "${nj}" "$(<${dumpdir}/mfcc/${dset}/utt2spk wc -l)")
+        #            steps/make_mfcc.sh --nj "${_nj}" --cmd "${train_cmd}" \
+        #                --write-utt2num-frames true \
+        #                --mfcc-config conf/mfcc.conf \
+        #                "${dumpdir}/mfcc/${dset}"
+        #            utils/fix_data_dir.sh "${dumpdir}/mfcc/${dset}"
 
-                    # 3. Compute VAD decision
-                    _nj=$(min "${nj}" "$(<${dumpdir}/mfcc/${dset}/spk2utt wc -l)")
-                    sid/compute_vad_decision.sh --nj ${_nj} --cmd "${train_cmd}" \
-                        --vad-config conf/vad.conf \
-                        "${dumpdir}/mfcc/${dset}"
-                    utils/fix_data_dir.sh "${dumpdir}/mfcc/${dset}"
+        #            # 3. Compute VAD decision
+        #            _nj=$(min "${nj}" "$(<${dumpdir}/mfcc/${dset}/spk2utt wc -l)")
+        #            sid/compute_vad_decision.sh --nj ${_nj} --cmd "${train_cmd}" \
+        #                --vad-config conf/vad.conf \
+        #                "${dumpdir}/mfcc/${dset}"
+        #            utils/fix_data_dir.sh "${dumpdir}/mfcc/${dset}"
 
-                    # 4. Extract X-vector
-                    sid/nnet3/xvector/extract_xvectors.sh --nj "${_nj}" --cmd "${train_cmd}" \
-                        "${xvector_exp}" \
-                        "${dumpdir}/mfcc/${dset}" \
-                        "${dumpdir}/xvector/${dset}"
+        #            # 4. Extract X-vector
+        #            sid/nnet3/xvector/extract_xvectors.sh --nj "${_nj}" --cmd "${train_cmd}" \
+        #                "${xvector_exp}" \
+        #                "${dumpdir}/mfcc/${dset}" \
+        #                "${dumpdir}/xvector/${dset}"
 
-                    # 5. Filter scp
-                    # NOTE(kan-bayashi): Since sometimes mfcc or x-vector extraction is failed,
-                    #   the number of utts will be different from the original features (raw or fbank).
-                    #   To avoid this mismatch, perform filtering of the original feature scp here.
-                    cp "${data_feats}${_suf}/${dset}"/wav.{scp,scp.bak}
-                    <"${data_feats}${_suf}/${dset}/wav.scp.bak" \
-                        utils/filter_scp.pl "${dumpdir}/xvector/${dset}/xvector.scp" \
-                        >"${data_feats}${_suf}/${dset}/wav.scp"
-                    utils/fix_data_dir.sh "${data_feats}${_suf}/${dset}"
-                done
-            else
-                # Assume that others toolkits are python-based
-                log "Stage 2+: Extract X-vector: data/ -> ${dumpdir}/xvector using python toolkits"
-                for dset in "${train_set}" "${valid_set}" ${test_sets}; do
-                    if [ "${dset}" = "${train_set}" ] || [ "${dset}" = "${valid_set}" ]; then
-                        _suf="/org"
-                    else
-                        _suf=""
-                    fi
-                    if [ "${xvector_tool}" = "rawnet" ]; then
-                        xvector_model="RawNet"
-                    fi
-                    pyscripts/utils/extract_xvectors.py \
-                        --pretrained_model ${xvector_model} \
-                        --toolkit ${xvector_tool} \
-                        ${data_feats}${_suf}/${dset} \
-                        ${dumpdir}/xvector/${dset}
-                done
-            fi
-        fi
+        #            # 5. Filter scp
+        #            # NOTE(kan-bayashi): Since sometimes mfcc or x-vector extraction is failed,
+        #            #   the number of utts will be different from the original features (raw or fbank).
+        #            #   To avoid this mismatch, perform filtering of the original feature scp here.
+        #            cp "${data_feats}${_suf}/${dset}"/wav.{scp,scp.bak}
+        #            <"${data_feats}${_suf}/${dset}/wav.scp.bak" \
+        #                utils/filter_scp.pl "${dumpdir}/xvector/${dset}/xvector.scp" \
+        #                >"${data_feats}${_suf}/${dset}/wav.scp"
+        #            utils/fix_data_dir.sh "${data_feats}${_suf}/${dset}"
+        #        done
+        #    else
+        #        # Assume that others toolkits are python-based
+        #        log "Stage 2+: Extract X-vector: data/ -> ${dumpdir}/xvector using python toolkits"
+        #        for dset in "${train_set}" "${valid_set}" ${test_sets}; do
+        #            if [ "${dset}" = "${train_set}" ] || [ "${dset}" = "${valid_set}" ]; then
+        #                _suf="/org"
+        #            else
+        #                _suf=""
+        #            fi
+        #            if [ "${xvector_tool}" = "rawnet" ]; then
+        #                xvector_model="RawNet"
+        #            fi
+        #            pyscripts/utils/extract_xvectors.py \
+        #                --pretrained_model ${xvector_model} \
+        #                --toolkit ${xvector_tool} \
+        #                ${data_feats}${_suf}/${dset} \
+        #                ${dumpdir}/xvector/${dset}
+        #        done
+        #    fi
+        #fi
 
-        # Prepare spk id input
-        if "${use_sid}"; then
-            log "Stage 2+: Prepare speaker id: data/ -> ${data_feats}/"
-            for dset in "${train_set}" "${valid_set}" ${test_sets}; do
-                if [ "${dset}" = "${train_set}" ] || [ "${dset}" = "${valid_set}" ]; then
-                    _suf="/org"
-                else
-                    _suf=""
-                fi
-                if [ "${dset}" = "${train_set}" ]; then
-                    # Make spk2sid
-                    # NOTE(kan-bayashi): 0 is reserved for unknown speakers
-                    echo "<unk> 0" > "${data_feats}${_suf}/${dset}/spk2sid"
-                    cut -f 2 -d " " "${data_feats}${_suf}/${dset}/utt2spk" | sort | uniq | \
-                        awk '{print $1 " " NR}' >> "${data_feats}${_suf}/${dset}/spk2sid"
-                fi
-                pyscripts/utils/utt2spk_to_utt2sid.py \
-                    "${data_feats}/org/${train_set}/spk2sid" \
-                    "${data_feats}${_suf}/${dset}/utt2spk" \
-                    > "${data_feats}${_suf}/${dset}/utt2sid"
-            done
-        fi
+        ## Prepare spk id input
+        #if "${use_sid}"; then
+        #    log "Stage 2+: Prepare speaker id: data/ -> ${data_feats}/"
+        #    for dset in "${train_set}" "${valid_set}" ${test_sets}; do
+        #        if [ "${dset}" = "${train_set}" ] || [ "${dset}" = "${valid_set}" ]; then
+        #            _suf="/org"
+        #        else
+        #            _suf=""
+        #        fi
+        #        if [ "${dset}" = "${train_set}" ]; then
+        #            # Make spk2sid
+        #            # NOTE(kan-bayashi): 0 is reserved for unknown speakers
+        #            echo "<unk> 0" > "${data_feats}${_suf}/${dset}/spk2sid"
+        #            cut -f 2 -d " " "${data_feats}${_suf}/${dset}/utt2spk" | sort | uniq | \
+        #                awk '{print $1 " " NR}' >> "${data_feats}${_suf}/${dset}/spk2sid"
+        #        fi
+        #        pyscripts/utils/utt2spk_to_utt2sid.py \
+        #            "${data_feats}/org/${train_set}/spk2sid" \
+        #            "${data_feats}${_suf}/${dset}/utt2spk" \
+        #            > "${data_feats}${_suf}/${dset}/utt2sid"
+        #    done
+        #fi
 
-        # Prepare lang id input
-        if "${use_lid}"; then
-            log "Stage 2+: Prepare lang id: data/ -> ${data_feats}/"
-            for dset in "${train_set}" "${valid_set}" ${test_sets}; do
-                if [ "${dset}" = "${train_set}" ] || [ "${dset}" = "${valid_set}" ]; then
-                    _suf="/org"
-                else
-                    _suf=""
-                fi
-                if [ "${dset}" = "${train_set}" ]; then
-                    # Make lang2lid
-                    # NOTE(kan-bayashi): 0 is reserved for unknown languages
-                    echo "<unk> 0" > "${data_feats}${_suf}/${dset}/lang2lid"
-                    cut -f 2 -d " " "${data_feats}${_suf}/${dset}/utt2lang" | sort | uniq | \
-                        awk '{print $1 " " NR}' >> "${data_feats}${_suf}/${dset}/lang2lid"
-                fi
-                # NOTE(kan-bayashi): We can reuse the same script for making utt2sid
-                pyscripts/utils/utt2spk_to_utt2sid.py \
-                    "${data_feats}/org/${train_set}/lang2lid" \
-                    "${data_feats}${_suf}/${dset}/utt2lang" \
-                    > "${data_feats}${_suf}/${dset}/utt2lid"
-            done
-        fi
+        ## Prepare lang id input
+        #if "${use_lid}"; then
+        #    log "Stage 2+: Prepare lang id: data/ -> ${data_feats}/"
+        #    for dset in "${train_set}" "${valid_set}" ${test_sets}; do
+        #        if [ "${dset}" = "${train_set}" ] || [ "${dset}" = "${valid_set}" ]; then
+        #            _suf="/org"
+        #        else
+        #            _suf=""
+        #        fi
+        #        if [ "${dset}" = "${train_set}" ]; then
+        #            # Make lang2lid
+        #            # NOTE(kan-bayashi): 0 is reserved for unknown languages
+        #            echo "<unk> 0" > "${data_feats}${_suf}/${dset}/lang2lid"
+        #            cut -f 2 -d " " "${data_feats}${_suf}/${dset}/utt2lang" | sort | uniq | \
+        #                awk '{print $1 " " NR}' >> "${data_feats}${_suf}/${dset}/lang2lid"
+        #        fi
+        #        # NOTE(kan-bayashi): We can reuse the same script for making utt2sid
+        #        pyscripts/utils/utt2spk_to_utt2sid.py \
+        #            "${data_feats}/org/${train_set}/lang2lid" \
+        #            "${data_feats}${_suf}/${dset}/utt2lang" \
+        #            > "${data_feats}${_suf}/${dset}/utt2lid"
+        #    done
+        #fi
     fi
 
 
@@ -475,12 +475,12 @@ if ! "${skip_data_prep}"; then
             # Copy data dir
             utils/copy_data_dir.sh --validate_opts "--non-print" "${data_feats}/org/${dset}" "${data_feats}/${dset}"
             cp "${data_feats}/org/${dset}/feats_type" "${data_feats}/${dset}/feats_type"
-            if [ -e "${data_feats}/org/${dset}/utt2sid" ]; then
-                cp "${data_feats}/org/${dset}/utt2sid" "${data_feats}/${dset}/utt2sid"
-            fi
-            if [ -e "${data_feats}/org/${dset}/utt2lid" ]; then
-                cp "${data_feats}/org/${dset}/utt2lid" "${data_feats}/${dset}/utt2lid"
-            fi
+            #if [ -e "${data_feats}/org/${dset}/utt2sid" ]; then
+            #    cp "${data_feats}/org/${dset}/utt2sid" "${data_feats}/${dset}/utt2sid"
+            #fi
+            #if [ -e "${data_feats}/org/${dset}/utt2lid" ]; then
+            #    cp "${data_feats}/org/${dset}/utt2lid" "${data_feats}/${dset}/utt2lid"
+            #fi
 
             # Remove short utterances
             _fs=$(python3 -c "import humanfriendly as h;print(h.parse_size('${fs}'))")
@@ -502,22 +502,22 @@ if ! "${skip_data_prep}"; then
 
             # fix_data_dir.sh leaves only utts which exist in all files
             _utt_extra_files=""
-            if [ -e "${data_feats}/org/${dset}/utt2sid" ]; then
-                _utt_extra_files+="utt2sid "
-            fi
-            if [ -e "${data_feats}/org/${dset}/utt2lid" ]; then
-                _utt_extra_files+="utt2lid "
-            fi
-            # shellcheck disable=SC2086
+            #if [ -e "${data_feats}/org/${dset}/utt2sid" ]; then
+            #    _utt_extra_files+="utt2sid "
+            #fi
+            #if [ -e "${data_feats}/org/${dset}/utt2lid" ]; then
+            #    _utt_extra_files+="utt2lid "
+            #fi
+            ## shellcheck disable=SC2086
             utils/fix_data_dir.sh --utt_extra_files "${_utt_extra_files}" "${data_feats}/${dset}"
 
-            # Filter x-vector
-            if "${use_xvector}"; then
-                cp "${dumpdir}/xvector/${dset}"/xvector.{scp,scp.bak}
-                <"${dumpdir}/xvector/${dset}/xvector.scp.bak" \
-                    utils/filter_scp.pl "${data_feats}/${dset}/wav.scp"  \
-                    >"${dumpdir}/xvector/${dset}/xvector.scp"
-            fi
+            ## Filter x-vector
+            #if "${use_xvector}"; then
+            #    cp "${dumpdir}/xvector/${dset}"/xvector.{scp,scp.bak}
+            #    <"${dumpdir}/xvector/${dset}/xvector.scp.bak" \
+            #        utils/filter_scp.pl "${data_feats}/${dset}/wav.scp"  \
+            #        >"${dumpdir}/xvector/${dset}/xvector.scp"
+            #fi
         done
     fi
 
@@ -589,10 +589,14 @@ if ! "${skip_train}"; then
         _opts+="--pitch_extract_conf hop_length=${n_shift} "
         _opts+="--pitch_extract_conf f0max=${f0max} "
         _opts+="--pitch_extract_conf f0min=${f0min} "
+        #_opts+="--pitch_extract_conf use_token_averaged_f0=False "
+        #_opts+="--pitch_extract_conf reduction_factor=3 "
         _opts+="--energy_extract_conf fs=${fs} "
         _opts+="--energy_extract_conf n_fft=${n_fft} "
         _opts+="--energy_extract_conf hop_length=${n_shift} "
         _opts+="--energy_extract_conf win_length=${win_length} "
+        #_opts+="--energy_extract_conf use_token_averaged_energy=False "
+        #_opts+="--energy_extract_conf reduction_factor=3 "
 
         if [ -n "${teacher_dumpdir}" ]; then
             _teacher_train_dir="${teacher_dumpdir}/${train_set}"
@@ -601,22 +605,22 @@ if ! "${skip_train}"; then
             _opts+="--valid_data_path_and_name_and_type ${_teacher_valid_dir}/durations,durations,text_int "
         fi
 
-        if "${use_xvector}"; then
-            _xvector_train_dir="${dumpdir}/xvector/${train_set}"
-            _xvector_valid_dir="${dumpdir}/xvector/${valid_set}"
-            _opts+="--train_data_path_and_name_and_type ${_xvector_train_dir}/xvector.scp,spembs,kaldi_ark "
-            _opts+="--valid_data_path_and_name_and_type ${_xvector_valid_dir}/xvector.scp,spembs,kaldi_ark "
-        fi
+        #if "${use_xvector}"; then
+        #    _xvector_train_dir="${dumpdir}/xvector/${train_set}"
+        #    _xvector_valid_dir="${dumpdir}/xvector/${valid_set}"
+        #    _opts+="--train_data_path_and_name_and_type ${_xvector_train_dir}/xvector.scp,spembs,kaldi_ark "
+        #    _opts+="--valid_data_path_and_name_and_type ${_xvector_valid_dir}/xvector.scp,spembs,kaldi_ark "
+        #fi
 
-        if "${use_sid}"; then
-            _opts+="--train_data_path_and_name_and_type ${_train_dir}/utt2sid,sids,text_int "
-            _opts+="--valid_data_path_and_name_and_type ${_valid_dir}/utt2sid,sids,text_int "
-        fi
+        #if "${use_sid}"; then
+        #    _opts+="--train_data_path_and_name_and_type ${_train_dir}/utt2sid,sids,text_int "
+        #    _opts+="--valid_data_path_and_name_and_type ${_valid_dir}/utt2sid,sids,text_int "
+        #fi
 
-        if "${use_lid}"; then
-            _opts+="--train_data_path_and_name_and_type ${_train_dir}/utt2lid,lids,text_int "
-            _opts+="--valid_data_path_and_name_and_type ${_valid_dir}/utt2lid,lids,text_int "
-        fi
+        #if "${use_lid}"; then
+        #    _opts+="--train_data_path_and_name_and_type ${_train_dir}/utt2lid,lids,text_int "
+        #    _opts+="--valid_data_path_and_name_and_type ${_valid_dir}/utt2lid,lids,text_int "
+        #fi
 
         # 1. Split the key file
         _logdir="${tts_stats_dir}/logdir"
@@ -841,6 +845,7 @@ if ! "${skip_train}"; then
             _opts+="--pitch_extract_conf hop_length=${n_shift} "
             _opts+="--pitch_extract_conf f0max=${f0max} "
             _opts+="--pitch_extract_conf f0min=${f0min} "
+            #_opts+="--pitch_extract_conf use_token_averaged_f0=False "
             _opts+="--pitch_normalize_conf stats_file=${tts_stats_dir}/train/pitch_stats.npz "
         fi
         if [ -e "${tts_stats_dir}/train/energy_stats.npz" ]; then
@@ -848,28 +853,29 @@ if ! "${skip_train}"; then
             _opts+="--energy_extract_conf n_fft=${n_fft} "
             _opts+="--energy_extract_conf hop_length=${n_shift} "
             _opts+="--energy_extract_conf win_length=${win_length} "
+            #_opts+="--energy_extract_conf use_token_averaged_energy=False "
             _opts+="--energy_normalize_conf stats_file=${tts_stats_dir}/train/energy_stats.npz "
         fi
 
-        # Add X-vector to the inputs if needed
-        if "${use_xvector}"; then
-            _xvector_train_dir="${dumpdir}/xvector/${train_set}"
-            _xvector_valid_dir="${dumpdir}/xvector/${valid_set}"
-            _opts+="--train_data_path_and_name_and_type ${_xvector_train_dir}/xvector.scp,spembs,kaldi_ark "
-            _opts+="--valid_data_path_and_name_and_type ${_xvector_valid_dir}/xvector.scp,spembs,kaldi_ark "
-        fi
+        ## Add X-vector to the inputs if needed
+        #if "${use_xvector}"; then
+        #    _xvector_train_dir="${dumpdir}/xvector/${train_set}"
+        #    _xvector_valid_dir="${dumpdir}/xvector/${valid_set}"
+        #    _opts+="--train_data_path_and_name_and_type ${_xvector_train_dir}/xvector.scp,spembs,kaldi_ark "
+        #    _opts+="--valid_data_path_and_name_and_type ${_xvector_valid_dir}/xvector.scp,spembs,kaldi_ark "
+        #fi
 
-        # Add spekaer ID to the inputs if needed
-        if "${use_sid}"; then
-            _opts+="--train_data_path_and_name_and_type ${_train_dir}/utt2sid,sids,text_int "
-            _opts+="--valid_data_path_and_name_and_type ${_valid_dir}/utt2sid,sids,text_int "
-        fi
+        ## Add spekaer ID to the inputs if needed
+        #if "${use_sid}"; then
+        #    _opts+="--train_data_path_and_name_and_type ${_train_dir}/utt2sid,sids,text_int "
+        #    _opts+="--valid_data_path_and_name_and_type ${_valid_dir}/utt2sid,sids,text_int "
+        #fi
 
-        # Add language ID to the inputs if needed
-        if "${use_lid}"; then
-            _opts+="--train_data_path_and_name_and_type ${_train_dir}/utt2lid,lids,text_int "
-            _opts+="--valid_data_path_and_name_and_type ${_valid_dir}/utt2lid,lids,text_int "
-        fi
+        ## Add language ID to the inputs if needed
+        #if "${use_lid}"; then
+        #    _opts+="--train_data_path_and_name_and_type ${_train_dir}/utt2lid,lids,text_int "
+        #    _opts+="--valid_data_path_and_name_and_type ${_valid_dir}/utt2lid,lids,text_int "
+        #fi
 
         if [ "${feats_normalize}" = "global_mvn" ]; then
             _opts+="--normalize_conf stats_file=${tts_stats_dir}/train/feats_stats.npz "
